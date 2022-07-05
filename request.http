@@ -1,4 +1,5 @@
 @HOST = http://localhost:3000
+@ID = 947228be-253c-48de-8961-0efd44ef7eea
 
 ###
 POST {{HOST}}/api/register
@@ -19,9 +20,26 @@ Content-Type: application/json
   "password": "Somerandompassword"
 }
 
+###
+POST {{HOST}}/api/logout
+
+###
+GET {{HOST}}/api/users
 
 ###
 GET {{HOST}}/api/user
 
 ###
-POST {{HOST}}/api/logout
+GET {{HOST}}/api/user/{{ID}}
+
+###
+PUT {{HOST}}/api/user
+Content-Type: application/json
+
+{ "name": "John Doe", "email": "another@mail.com" }
+
+###
+DELETE {{HOST}}/api/user/
+
+###
+DELETE {{HOST}}/api/user/{{ID}}

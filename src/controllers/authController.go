@@ -25,7 +25,7 @@ var (
 )
 
 type Error struct {
-	Status  uint    `json:"status"`
+	Status  uint16  `json:"status"`
 	Message *string `json:"message"`
 }
 
@@ -42,7 +42,7 @@ func Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(&responseError)
 	}
 
-	var user models.User
+	var user *models.User
 
 	query := database.DB.Where("email = ?", data["email"]).First(&user)
 	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
@@ -65,7 +65,7 @@ func Register(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(&responseError)
 	}
 
-	user = models.User{
+	user = &models.User{
 		Id:        uuid.NewString(),
 		Name:      data["name"],
 		Email:     data["email"],
@@ -91,7 +91,7 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(&responseError)
 	}
 
-	var user models.User
+	var user *models.User
 
 	query := database.DB.Where("email = ?", data["email"]).First(&user)
 	if errors.Is(query.Error, gorm.ErrRecordNotFound) {
@@ -137,34 +137,6 @@ func Login(c *fiber.Ctx) error {
 
 	c.Cookie(&cookie)
 	return c.SendStatus(fiber.StatusOK)
-}
-
-func User(c *fiber.Ctx) error {
-	cookie := c.Cookies("jwt")
-
-	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(*settings.JWTSecret), nil
-	})
-
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
-	}
-
-	claims := token.Claims.(*jwt.StandardClaims)
-
-	var user models.User
-
-	query := database.DB.Where("id = ?", claims.Issuer).First(&user)
-	if errors.Is(query.Error, gorm.ErrRecordNotFound) {
-		responseError := Error{
-			Status:  fiber.StatusNotFound,
-			Message: &ErrUserNotFound,
-		}
-
-		return c.Status(fiber.StatusNotFound).JSON(&responseError)
-	}
-
-	return c.Status(fiber.StatusOK).JSON(&user)
 }
 
 func Logout(c *fiber.Ctx) error {
