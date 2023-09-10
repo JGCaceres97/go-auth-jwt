@@ -2,7 +2,7 @@ port: 3000
 database:
   host: localhost
   port: 3306
-  user: root
-  password: root
+  user: dev
+  password: dev
   name: go_auth_jwt
 jwtsecret: Th15S3cr3T

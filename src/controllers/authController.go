@@ -5,12 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/jgcaceres97/go-auth-jwt/src/controllers/helpers"
 	"github.com/jgcaceres97/go-auth-jwt/src/database"
 	"github.com/jgcaceres97/go-auth-jwt/src/models"
-	"github.com/jgcaceres97/go-auth-jwt/src/settings"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -112,12 +111,7 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(&responseError)
 	}
 
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Issuer:    user.Id,
-		ExpiresAt: time.Now().Add(10 * time.Minute).Unix(),
-	})
-
-	token, err := claims.SignedString([]byte(*settings.JWTSecret))
+	cookie, err := helpers.CreateJwtCookie(&user.Id)
 	if err != nil {
 		responseError := Error{
 			Status:  fiber.StatusInternalServerError,
@@ -128,26 +122,22 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(&responseError)
 	}
 
-	cookie := fiber.Cookie{
-		Expires:  time.Now().Add(10 * time.Minute).UTC(),
-		HTTPOnly: true,
-		Name:     "jwt",
-		Value:    token,
-	}
-
-	c.Cookie(&cookie)
+	c.Cookie(cookie)
 	return c.SendStatus(fiber.StatusOK)
 }
 
 func Logout(c *fiber.Ctx) error {
-	cookie := fiber.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		HTTPOnly: true,
-		Expires:  time.Now().Add(-time.Minute),
-	}
-
-	c.Cookie(&cookie)
+	c.Cookie(helpers.DeleteJwtCookie())
 
 	return c.SendStatus(fiber.StatusOK)
+}
+
+func CheckAuth(c *fiber.Ctx) error {
+	err := helpers.CheckJWT(c)
+
+	if err != nil {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	return c.Next()
 }
